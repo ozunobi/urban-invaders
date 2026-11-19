@@ -1,6 +1,22 @@
 {
-  "outputDirectory": "web-build"
+  "outputDirectory": "web-build",
+  "rewrites": [
+    {
+      "source": "/embed/heatmap",
+      "destination": "/embed/heatmap.html"
+    },
+    {
+      "source": "/embed/reports",
+      "destination": "/embed/reports.html"
+    },
+    {
+      "source": "/:path(.+)",
+      "destination": "/:path.html"
+    }
+  ]
 }
+
+
 
 
 
