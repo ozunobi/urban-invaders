@@ -8,7 +8,7 @@
     "scheme": "urbaninvaders",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,26 +17,63 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.urbaninvaders.urbaninvaders"
     },
     "web": {
-      "output": "server",
-      "favicon": "./assets/images/favicon.png"
+      "output": "static",
+      "favicon": "./assets/images/favicon-2.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "image": "./assets/images/splash.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#FF7D36"
+        }
+      ],
+      "expo-status-bar",
+      "expo-web-browser",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Urban Invaders to attach photos to forum posts and sighting reports.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Urban Invaders uses your location to center the sighting map."
+        }
+      ],
+      "@clerk/expo",
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-video",
+        {
+          "supportsPictureInPicture": true
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
-    }
+      "reactCompiler": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "af37c8ad-db4e-446d-acbb-54ef76ee03ad"
+      }
+    },
+    "owner": "urban-invaders"
   }
 }

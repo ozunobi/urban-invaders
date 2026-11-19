@@ -1,0 +1,134 @@
+diff --git a/node_modules/expo/build/dom/webview-wrapper.js b/node_modules/expo/build/dom/webview-wrapper.js
+index 02f713b..aa188c8 100644
+--- a/node_modules/expo/build/dom/webview-wrapper.js
++++ b/node_modules/expo/build/dom/webview-wrapper.js
+@@ -11,6 +11,9 @@ import { DOM_READY, getInjectBodySizeObserverScript, getInjectEventScript, MATCH
+ import ExpoDomWebView from './webview/ExpoDOMWebView';
+ import RNWebView from './webview/RNWebView';
+ import { useDebugZeroHeight } from './webview/useDebugZeroHeight';
++function isDetachedDomWebViewError(error) {
++    return error instanceof Error && error.message.includes('Unable to find the class expo.modules.webview.DomWebView view with tag');
++}
+ const RawWebView = /*#__PURE__*/ React.forwardRef((props, ref)=>{
+     const { children, dom: domProps, filePath, ref: _ref, ...marshalProps } = props;
+     const { overrideUri, unstable_useExpoModulesBridge, ...dom } = domProps || {};
+@@ -20,6 +23,18 @@ const RawWebView = /*#__PURE__*/ React.forwardRef((props, ref)=>{
+             throw new Error(`DOM components do not accept children. Found: ${children} | in component: ${filePath.split('?')[0]}`);
+         }
+     }
++    const webviewRef = React.useRef(null);
++    const domImperativeHandlePropsRef = React.useRef([]);
++    const injectJavaScript = React.useCallback((script)=>{
++        const result = webviewRef.current?.injectJavaScript(script);
++        if (result instanceof Promise) {
++            void result.catch((error)=>{
++                if (!isDetachedDomWebViewError(error)) {
++                    throw error;
++                }
++            });
++        }
++    }, []);
+     if (ref != null && typeof ref === 'object' && ref.current == null) {
+         ref.current = new Proxy({}, {
+             get (_, prop) {
+@@ -27,7 +42,7 @@ const RawWebView = /*#__PURE__*/ React.forwardRef((props, ref)=>{
+                 if (domImperativeHandlePropsRef.current?.includes(propName)) {
+                     return function(...args) {
+                         const serializedArgs = args.map((arg)=>JSON.stringify(arg)).join(',');
+-                        webviewRef.current?.injectJavaScript(`window._domRefProxy.${propName}(${serializedArgs})`);
++                        injectJavaScript(`window._domRefProxy.${propName}(${serializedArgs})`);
+                     };
+                 }
+                 if (typeof webviewRef.current?.[propName] === 'function') {
+@@ -41,17 +56,15 @@ const RawWebView = /*#__PURE__*/ React.forwardRef((props, ref)=>{
+     }
+     const useExpoDOMWebView = dom?.useExpoDOMWebView ?? true;
+     const webView = resolveWebView(useExpoDOMWebView);
+-    const webviewRef = React.useRef(null);
+-    const domImperativeHandlePropsRef = React.useRef([]);
+     const source = {
+         uri: overrideUri ?? `${getBaseURL()}/${filePath}`
+     };
+     const [containerStyle, setContainerStyle] = React.useState(null);
+     const { debugZeroHeightStyle, debugOnLayout } = useDebugZeroHeight(dom);
+     const emit = React.useCallback((detail)=>{
+-        webviewRef.current?.injectJavaScript(getInjectEventScript(detail));
++        injectJavaScript(getInjectEventScript(detail));
+     }, [
+-        webviewRef
++        injectJavaScript
+     ]);
+     // serializable props, action names.
+     const smartActions = Object.entries(marshalProps).reduce((acc, [key, value])=>{
+diff --git a/node_modules/expo/src/dom/webview-wrapper.tsx b/node_modules/expo/src/dom/webview-wrapper.tsx
+index c9d79a4..26f93bf 100644
+--- a/node_modules/expo/src/dom/webview-wrapper.tsx
++++ b/node_modules/expo/src/dom/webview-wrapper.tsx
+@@ -33,6 +33,15 @@ interface Props {
+   [propName: string]: unknown;
+ }
+ 
++function isDetachedDomWebViewError(error: unknown) {
++  return (
++    error instanceof Error &&
++    error.message.includes(
++      'Unable to find the class expo.modules.webview.DomWebView view with tag'
++    )
++  );
++}
++
+ const RawWebView = React.forwardRef<object, Props>((props, ref) => {
+   const { children, dom: domProps, filePath, ref: _ref, ...marshalProps } = props as Props;
+   const { overrideUri, unstable_useExpoModulesBridge, ...dom } = domProps || {};
+@@ -45,6 +54,19 @@ const RawWebView = React.forwardRef<object, Props>((props, ref) => {
+     }
+   }
+ 
++  const webviewRef = React.useRef<WebViewRef>(null);
++  const domImperativeHandlePropsRef = React.useRef<string[]>([]);
++  const injectJavaScript = React.useCallback((script: string) => {
++    const result: unknown = webviewRef.current?.injectJavaScript(script);
++    if (result instanceof Promise) {
++      void result.catch((error: unknown) => {
++        if (!isDetachedDomWebViewError(error)) {
++          throw error;
++        }
++      });
++    }
++  }, []);
++
+   if (ref != null && typeof ref === 'object' && ref.current == null) {
+     ref.current = new Proxy(
+       {},
+@@ -54,9 +76,7 @@ const RawWebView = React.forwardRef<object, Props>((props, ref) => {
+           if (domImperativeHandlePropsRef.current?.includes(propName)) {
+             return function (...args: any[]) {
+               const serializedArgs = args.map((arg) => JSON.stringify(arg)).join(',');
+-              webviewRef.current?.injectJavaScript(
+-                `window._domRefProxy.${propName}(${serializedArgs})`
+-              );
++              injectJavaScript(`window._domRefProxy.${propName}(${serializedArgs})`);
+             };
+           }
+           if (typeof webviewRef.current?.[propName] === 'function') {
+@@ -72,8 +92,6 @@ const RawWebView = React.forwardRef<object, Props>((props, ref) => {
+ 
+   const useExpoDOMWebView = dom?.useExpoDOMWebView ?? true;
+   const webView = resolveWebView(useExpoDOMWebView);
+-  const webviewRef = React.useRef<WebViewRef>(null);
+-  const domImperativeHandlePropsRef = React.useRef<string[]>([]);
+   const source = { uri: overrideUri ?? `${getBaseURL()}/${filePath}` };
+   const [containerStyle, setContainerStyle] = React.useState<WebViewProps['containerStyle']>(null);
+ 
+@@ -81,9 +99,9 @@ const RawWebView = React.forwardRef<object, Props>((props, ref) => {
+ 
+   const emit = React.useCallback(
+     (detail: BridgeMessage<any>) => {
+-      webviewRef.current?.injectJavaScript(getInjectEventScript(detail));
++      injectJavaScript(getInjectEventScript(detail));
+     },
+-    [webviewRef]
++    [injectJavaScript]
+   );
+ 
+   // serializable props, action names.

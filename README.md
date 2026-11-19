@@ -1,5 +1,15 @@
 # Welcome to your Expo app 👋
 
+## Account data and report review
+
+The app uses Clerk for authentication and Supabase for forum activity, game progress, reports, and in-app notifications. Configure `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, `EXPO_PUBLIC_SUPABASE_URL`, and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in your local environment. Never put a Supabase service-role key in the app.
+
+Connect the Clerk instance to Supabase through [Clerk's Supabase setup](https://dashboard.clerk.com/setup/supabase), and add Clerk under the project's Supabase Auth third-party providers. Clerk session tokens must contain the `role: authenticated` claim. Deploy the migrations with `npx supabase db push --remote` after linking the intended project.
+
+New sightings are pending and visible only to their submitter. A trusted administrator can review `sighting_reports` in the Supabase dashboard and set `status` to `accepted` or `rejected`. Ordinary accounts cannot change report status. Acceptance creates a notification and makes the report available on the map. Pending report photos are private; forum images are public. Notifications are in-app and refresh approximately every 30 seconds; they are not device push notifications.
+
+The local database isolation and trigger test is `supabase/tests/profile_activity.sql`. It runs in a transaction and rolls back its test records.
+
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
 ## Get started
@@ -9,6 +19,10 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```bash
    npm install
    ```
+
+   The `postinstall` script applies the Expo DOM WebView patch in `patches/`.
+   If install scripts were skipped, run `npx patch-package --error-on-fail`
+   and restart Metro with `npx expo start --clear`.
 
 2. Start the app
 

@@ -1,16 +1,8 @@
 {
   "buildCommand": "npm run build:web",
   "outputDirectory": "web-build",
-  "functions": {
-    "api/index.mjs": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api"
-    }
-  ]
+  "cleanUrls": true,
+  "trailingSlash": false
 }
+
 
