@@ -1,6 +1,6 @@
 {
   "buildCommand": "exit 0",
-  "outputDirectory": ".",
+  "outputDirectory": "public",
   "rewrites": [
     {
       "source": "/embed/heatmap",
@@ -16,6 +16,7 @@
     }
   ]
 }
+
 
 
 
