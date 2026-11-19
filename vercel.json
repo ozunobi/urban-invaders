@@ -1,7 +1,8 @@
 {
-  "buildCommand": "npm run build:web",
+  "buildCommand": "bash build.sh",
   "outputDirectory": "web-build"
 }
+
 
 
 
