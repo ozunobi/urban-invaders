@@ -1,4 +1,5 @@
 {
+  "buildCommand": "exit 0",
   "rewrites": [
     {
       "source": "/embed/heatmap",
@@ -14,6 +15,7 @@
     }
   ]
 }
+
 
 
 
