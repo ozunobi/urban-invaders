@@ -1,7 +1,7 @@
 {
-  "buildCommand": "bash build.sh",
   "outputDirectory": "web-build"
 }
+
 
 
 
