@@ -1,6 +1,6 @@
 {
   "buildCommand": "echo 'Skipping build'",
-  "outputDirectory": "public",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/embed/heatmap",
@@ -16,6 +16,7 @@
     }
   ]
 }
+
 
 
 
