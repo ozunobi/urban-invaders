@@ -1,18 +1,8 @@
 {
   "buildCommand": "npm run build:web",
-  "outputDirectory": "web-build",
-  "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/embed/heatmap",
-      "destination": "/embed/heatmap.html"
-    },
-    {
-      "source": "/embed/reports",
-      "destination": "/embed/reports.html"
-    }
-  ]
+  "outputDirectory": "web-build"
 }
+
 
 
 
