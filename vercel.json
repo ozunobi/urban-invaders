@@ -1,11 +1,16 @@
 {
   "buildCommand": "npm run build:web",
   "outputDirectory": "web-build",
-  "framework": "react",
+  "functions": {
+    "api/index.mjs": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/api"
     }
   ]
 }
+
