@@ -25,7 +25,7 @@
       "package": "com.urbaninvaders.urbaninvaders"
     },
     "web": {
-      "output": "static",
+      "output": "dynamic",
       "favicon": "./assets/images/favicon-2.png"
     },
     "plugins": [

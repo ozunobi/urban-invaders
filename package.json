@@ -10,6 +10,7 @@
     "expo": "~58.0.25",
     "expo-auth-session": "~58.0.18",
     "expo-constants": "~58.0.16",
+    "expo-crypto": "~58.0.7",
     "expo-device": "~58.0.5",
     "expo-file-system": "~58.0.13",
     "expo-font": "~58.0.12",
@@ -54,7 +55,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "expo export --platform web --output-dir web-build",
+    "build:web": "expo export --platform web --output-dir dist",
     "lint": "expo lint"
   },
   "private": true,
