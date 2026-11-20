@@ -72,7 +72,7 @@ export default function RootLayout() {
               <Stack.Screen name="word-hunt" options={{ headerShown: true, title: 'HIDDEN INVADERS' }} />
               <Stack.Screen name="species-quiz" options={{ headerShown: true, title: 'SPECIES QUIZ' }}
                />
-               <Stack.Screen name="embed" options={{ headerShown: false, animation: "none" }} />
+              <Stack.Screen name="embed" options={{ headerShown: false }} />
             </Stack>
             <AppFooter />
           </View>

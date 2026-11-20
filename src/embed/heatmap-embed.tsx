@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { View, StyleSheet, Text, ScrollView, ActivityIndicator, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import SightingMap, { type SightingMapPin } from '../components/SightingMap';
@@ -12,17 +13,12 @@ type Report = {
   photoUrl: string | null;
   latitude: number;
   longitude: number;
+  status: 'pending' | 'accepted' | 'rejected';
 };
 
 type ReportLocation = SightingMapPin & {
   name: string;
   reports: Report[];
-};
-
-const INITIAL_CENTER = {
-  latitude: 14.55,
-  longitude: 121.1,
-  zoom: 10,
 };
 
 interface HeatmapEmbedProps {
@@ -51,13 +47,20 @@ export default function HeatmapEmbed({
     zoom,
   });
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [isDrawerExpanded, setIsDrawerExpanded] = useState(false);
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${supabaseUrl}/rest/v1/sighting_reports?status=eq.accepted&limit=${maxReports}`, {
+        const query = new URLSearchParams({
+          select: 'id,species,description,latitude,longitude,sighting_date,sighting_time,created_at,photo_url,status',
+          limit: String(maxReports),
+          order: 'created_at.desc',
+        });
+        const response = await fetch(`${supabaseUrl}/rest/v1/sighting_reports?${query}`, {
           headers: {
             apikey: supabaseKey,
           },
@@ -69,17 +72,20 @@ export default function HeatmapEmbed({
 
         const data = await response.json();
         setReports(
-          data.map((report: any) => ({
-            id: report.id,
-            species: report.species,
-            description: report.description,
-            latitude: report.latitude,
-            longitude: report.longitude,
-            reportedAt: [report.sighting_date || new Date(report.created_at).toLocaleDateString(), report.sighting_time]
-              .filter(Boolean)
-              .join(' '),
-            photoUrl: report.photo_url,
-          }))
+          data
+            .filter((report: any) => report.status !== 'rejected')
+            .map((report: any) => ({
+              id: report.id,
+              species: report.species,
+              description: report.description,
+              latitude: report.latitude,
+              longitude: report.longitude,
+              reportedAt: [report.sighting_date || new Date(report.created_at).toLocaleDateString(), report.sighting_time]
+                .filter(Boolean)
+                .join(' '),
+              photoUrl: report.photo_url,
+              status: report.status,
+            }))
         );
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load reports');
@@ -102,6 +108,14 @@ export default function HeatmapEmbed({
   }));
 
   const selectedLocation = locations.find((location) => location.id === selectedLocationId) ?? null;
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const matchingLocations = normalizedQuery
+    ? locations.filter((location) =>
+        `${location.name} ${location.reports.map((report) => report.species).join(' ')}`
+          .toLowerCase()
+          .includes(normalizedQuery),
+      )
+    : [];
   const mapPins = locations.map((location) => ({
     id: location.id,
     latitude: location.latitude,
@@ -117,7 +131,18 @@ export default function HeatmapEmbed({
       longitude: location.longitude,
       zoom: 12,
     });
+    setSearchQuery(location.name);
+    setShowSuggestions(false);
     setIsDrawerExpanded(true);
+  };
+
+  const submitSearch = () => {
+    const match = matchingLocations[0];
+    if (match) {
+      selectLocation(match);
+    } else {
+      setShowSuggestions(false);
+    }
   };
 
   const styles = createStyles();
@@ -156,6 +181,69 @@ export default function HeatmapEmbed({
         dom={{ scrollEnabled: true, style: { width: '100%', height: '100%', zIndex: 0 } }}
       />
 
+      <SafeAreaView edges={['top']} pointerEvents="box-none" style={styles.topOverlay}>
+        <View style={styles.searchRow}>
+          <View style={styles.searchBox}>
+            <SymbolView name={{ android: 'search', web: 'search' }} size={20} tintColor="#746B64" />
+            <TextInput
+              accessibilityLabel="Search locations"
+              onChangeText={(text) => {
+                setSearchQuery(text);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onSubmitEditing={submitSearch}
+              placeholder="Search locations"
+              placeholderTextColor="#8B8178"
+              returnKeyType="search"
+              style={styles.searchInput}
+              value={searchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable
+                accessibilityLabel="Clear location search"
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => {
+                  setSearchQuery('');
+                  setShowSuggestions(false);
+                }}
+              >
+                <SymbolView name={{ android: 'close', web: 'close' }} size={18} tintColor="#746B64" />
+              </Pressable>
+            )}
+          </View>
+        </View>
+        {showSuggestions && normalizedQuery.length > 0 && (
+          <View style={styles.suggestions}>
+            {matchingLocations.length > 0 ? (
+              matchingLocations.map((location) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={location.id}
+                  onPress={() => selectLocation(location)}
+                  style={styles.suggestion}
+                >
+                  <SymbolView
+                    name={{ android: 'location_on', web: 'location_on' }}
+                    size={18}
+                    tintColor="#EC6425"
+                  />
+                  <View>
+                    <Text style={styles.suggestionName}>{location.name}</Text>
+                    <Text style={styles.suggestionMeta}>
+                      {location.reports.length} community reports
+                    </Text>
+                  </View>
+                </Pressable>
+              ))
+            ) : (
+              <Text style={styles.noResults}>No matching locations</Text>
+            )}
+          </View>
+        )}
+      </SafeAreaView>
+
       <View
         style={[
           styles.drawer,
@@ -163,9 +251,14 @@ export default function HeatmapEmbed({
         ]}
       >
         <SafeAreaView edges={['bottom']} style={styles.drawerSafeArea}>
-          <View style={styles.drawerHandleArea}>
+          <Pressable
+            accessibilityLabel={isDrawerExpanded ? 'Collapse reports' : 'Expand reports'}
+            accessibilityRole="button"
+            onPress={() => setIsDrawerExpanded((expanded) => !expanded)}
+            style={styles.drawerHandleArea}
+          >
             <View style={styles.drawerHandle} />
-          </View>
+          </Pressable>
 
           <View style={styles.drawerHeading}>
             <View style={styles.drawerTitleBlock}>
@@ -192,7 +285,17 @@ export default function HeatmapEmbed({
               {selectedLocation.reports.map((report) => (
                 <View key={report.id} style={styles.reportCard}>
                   <View style={styles.reportCardTop}>
-                    <Text style={styles.reportCategory}>INVASIVE SPECIES</Text>
+                    <View style={[
+                      styles.reportCategory,
+                      report.status === 'pending' ? styles.unconfirmedBadge : styles.confirmedBadge,
+                    ]}>
+                      <Text style={[
+                        styles.reportCategoryText,
+                        report.status === 'pending' ? styles.unconfirmedText : styles.confirmedText,
+                      ]}>
+                        {report.status === 'pending' ? 'UNCONFIRMED SIGHTING' : 'CONFIRMED SIGHTING'}
+                      </Text>
+                    </View>
                     <Text style={styles.reportDate}>{report.reportedAt}</Text>
                   </View>
                   <Text style={styles.speciesName}>{report.species}</Text>
@@ -205,6 +308,11 @@ export default function HeatmapEmbed({
                     />
                   )}
                   <View style={styles.reportLocation}>
+                    <SymbolView
+                      name={{ android: 'location_on', web: 'location_on' }}
+                      size={14}
+                      tintColor="#746B64"
+                    />
                     <Text style={styles.reportLocationText}>{selectedLocation.name}</Text>
                   </View>
                 </View>
@@ -212,7 +320,7 @@ export default function HeatmapEmbed({
             </ScrollView>
           ) : (
             <Text style={styles.emptyState}>
-              Click on a marker to view reports from that location
+              Click on a marker to view sighting reports from that location
             </Text>
           )}
         </SafeAreaView>
@@ -226,6 +334,83 @@ function createStyles() {
     container: {
       flex: 1,
       backgroundColor: '#E8E3DB',
+    },
+    topOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 12,
+      right: 12,
+      zIndex: 1101,
+    },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 6,
+    },
+    searchBox: {
+      height: 50,
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 14,
+      borderRadius: 14,
+      backgroundColor: '#FFF7F0',
+      borderWidth: 1,
+      borderColor: 'rgba(32, 28, 24, 0.12)',
+      shadowColor: '#201C18',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.14,
+      shadowRadius: 6,
+      elevation: 4,
+    },
+    searchInput: {
+      flex: 1,
+      minWidth: 0,
+      paddingVertical: 0,
+      color: '#201C18',
+      fontFamily: 'PPMori',
+      fontSize: 14,
+    },
+    suggestions: {
+      marginTop: 7,
+      paddingVertical: 5,
+      borderRadius: 14,
+      backgroundColor: '#FFF7F0',
+      borderWidth: 1,
+      borderColor: 'rgba(32, 28, 24, 0.1)',
+      shadowColor: '#201C18',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.16,
+      shadowRadius: 6,
+      elevation: 5,
+    },
+    suggestion: {
+      minHeight: 54,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    suggestionName: {
+      color: '#201C18',
+      fontFamily: 'PPMoriBold',
+      fontSize: 14,
+    },
+    suggestionMeta: {
+      marginTop: 2,
+      color: '#746B64',
+      fontFamily: 'PPMori',
+      fontSize: 11,
+    },
+    noResults: {
+      paddingHorizontal: 14,
+      paddingVertical: 16,
+      color: '#746B64',
+      fontFamily: 'PPMori',
+      fontSize: 13,
     },
     loadingContainer: {
       flex: 1,
@@ -341,12 +526,31 @@ function createStyles() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      gap: 8,
     },
     reportCategory: {
-      color: '#B94417',
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 6,
+      flexShrink: 1,
+    },
+    unconfirmedBadge: {
+      backgroundColor: '#FFF3E0',
+    },
+    confirmedBadge: {
+      backgroundColor: '#E8F5E9',
+    },
+    reportCategoryText: {
       fontFamily: 'PPMoriBold',
-      fontSize: 9,
+      fontSize: 10,
       letterSpacing: 0.8,
+      color: '#B94417',
+    },
+    unconfirmedText: {
+      color: '#E65100',
+    },
+    confirmedText: {
+      color: '#2E7D32',
     },
     reportDate: {
       color: '#82776F',

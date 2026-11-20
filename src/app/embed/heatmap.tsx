@@ -24,7 +24,7 @@ export default function HeatmapEmbedPage() {
   return (
     <HeatmapEmbed
       supabaseUrl={process.env.EXPO_PUBLIC_SUPABASE_URL || ''}
-      supabaseKey={process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''}
+      supabaseKey={process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''}
       centerLat={params.lat}
       centerLng={params.lng}
       zoom={params.zoom}
