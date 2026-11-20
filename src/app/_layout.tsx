@@ -70,7 +70,9 @@ export default function RootLayout() {
               <Stack.Screen name="heatmap" options={{ headerShown: false, title: 'HEAT MAP' }} />
               <Stack.Screen name="games" options={{ headerShown: true, title: 'WEEKLY GAMES' }} />
               <Stack.Screen name="word-hunt" options={{ headerShown: true, title: 'HIDDEN INVADERS' }} />
-              <Stack.Screen name="species-quiz" options={{ headerShown: true, title: 'SPECIES QUIZ' }} />
+              <Stack.Screen name="species-quiz" options={{ headerShown: true, title: 'SPECIES QUIZ' }}
+               />
+               <Stack.Screen name="embed" options={{ headerShown: false }} />
             </Stack>
             <AppFooter />
           </View>
